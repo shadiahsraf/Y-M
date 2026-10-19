@@ -1756,6 +1756,24 @@ input:focus, textarea:focus {
   text-align: left;
   width: 100%;
 }
+.empty-wishes-placeholder {
+  text-align: center;
+  padding: 1.8rem 1.2rem;
+  background: rgba(255, 253, 249, 0.7);
+  border: 1px dashed rgba(212, 175, 55, 0.4);
+  border-radius: 8px;
+  color: var(--br);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+  box-shadow: 0 4px 12px rgba(80, 60, 40, 0.03);
+}
+.empty-wishes-placeholder .empty-icon {
+  display: block;
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+  opacity: 0.85;
+}
 .wish-card {
   background: #FFFDF9;
   border: 1px solid rgba(212, 175, 55, 0.35);
@@ -2382,7 +2400,7 @@ input:focus, textarea:focus {
     <form class="guestbook-form r" id="mf" style="--d:.3s" novalidate>
       <div>
         <label for="gn">Your Name</label>
-        <input id="gn" maxlength="80" autocomplete="name" placeholder="e.g. Fady &amp; Mary" required>
+        <input id="gn" maxlength="80" autocomplete="name" placeholder="Your Name" required>
       </div>
       <div>
         <label for="gm">Your Prayer or Message</label>
@@ -3629,19 +3647,16 @@ setInterval(tick, 1000);
 const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycby5gtszWptERnxWHkVxbOvJOCg30HlEuurFKNz0FlBOpmLXweWAxFczYBGynRufO0Jb/exec'; 
 const STORAGE_KEY = 'ym_guest_wishes';
 
-// Curated starter blessings so the wall is warmly populated from day one
-const SEEDED_WISHES = [
-  {
-    name: "Uncle Fady & Family",
-    message: "May Christ always be the head of your home, and may your love grow deeper with every passing day! 🤍",
-    date: "2026-10-18T18:30:00.000Z"
-  },
-  {
-    name: "Marina & Mina",
-    message: "ألف مبروك لأجمل عروسين في الدنيا! ربنا يملأ بيتكم الجديد فرح وبركة وسلام لا ينتهي ✨",
-    date: "2026-10-19T14:15:00.000Z"
-  }
-];
+// Filter out any previous test/sample entries from storage
+function getStoredWishes() {
+  try {
+    const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    if (Array.isArray(local)) {
+      return local.filter(w => w && w.name && w.name !== 'Uncle Fady & Family' && w.name !== 'Marina & Mina' && w.name !== 'Test User');
+    }
+  } catch(e) {}
+  return [];
+}
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -3664,18 +3679,20 @@ function formatWishDate(dateStr) {
   }
 }
 
-function getStoredWishes() {
-  try {
-    const local = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (Array.isArray(local) && local.length > 0) return local;
-  } catch(e) {}
-  return [...SEEDED_WISHES];
-}
-
 function renderWishesWall(wishes, justAddedIdx = -1) {
   const wall = $('#wishesWall');
   if (!wall) return;
   wall.innerHTML = '';
+
+  if (!wishes || wishes.length === 0) {
+    wall.innerHTML = `
+      <div class="empty-wishes-placeholder">
+        <span class="empty-icon">🕊️</span>
+        <p>Be the first to inscribe a blessing in our story!</p>
+      </div>
+    `;
+    return;
+  }
 
   wishes.forEach((item, idx) => {
     const card = document.createElement('div');
@@ -3712,7 +3729,7 @@ async function loadWishesFromGoogleSheet() {
         date: row.date || row.Timestamp || row.time || '',
         name: row.name || row.Name || 'A Beloved Guest',
         message: row.message || row.Message || ''
-      })).filter(w => w.name && w.message);
+      })).filter(w => w.name && w.message && w.name !== 'Uncle Fady & Family' && w.name !== 'Marina & Mina' && w.name !== 'Test User');
 
       // Cloud entries usually append to bottom, so reverse to show newest first
       parsedCloud.reverse();
