@@ -733,7 +733,7 @@ h1 i {
 .polaroid-deck-wrap {
   position: relative;
   width: min(88vw, 360px);
-  height: clamp(440px, 68vw, 520px);
+  height: clamp(480px, 75vw, 550px);
   margin: 1rem auto 2.5rem;
   perspective: 1000px;
 }
@@ -779,18 +779,34 @@ h1 i {
 .polaroid-photo-box {
   width: 100%;
   flex: 1;
-  background: #2b2520;
+  background: #191410;
   border-radius: 3px;
   overflow: hidden;
   position: relative;
   border: 1px solid rgba(212, 175, 55, .45);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5), inset 0 0 0 3px rgba(212, 175, 55, .25), 0 3px 10px rgba(0,0,0,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.photo-ambient-bg {
+  position: absolute;
+  inset: -12px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(16px) brightness(0.65);
+  opacity: 0.68;
+  transform: scale(1.14);
+  pointer-events: none;
 }
 .polaroid-photo-box img {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   pointer-events: none;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.25));
 }
 
 /* ==========================================================================
@@ -907,7 +923,6 @@ h1 i {
   outline-offset: -5px;
   cursor: pointer;
   transition: transform .4s var(--e), box-shadow .4s var(--e);
-  aspect-ratio: 3/4.2;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -918,21 +933,38 @@ h1 i {
 }
 .grid-polaroid-item .img-box {
   width: 100%;
-  flex: 1;
+  aspect-ratio: 3/4.2;
   overflow: hidden;
   border-radius: 3px;
   position: relative;
   border: 1px solid rgba(212, 175, 55, .35);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5), inset 0 0 0 2px rgba(212, 175, 55, .2), 0 2px 8px rgba(0,0,0,.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #191410;
+}
+.grid-polaroid-item .img-box .photo-ambient-bg {
+  position: absolute;
+  inset: -10px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(14px) brightness(0.65);
+  opacity: 0.65;
+  transform: scale(1.12);
+  pointer-events: none;
 }
 .grid-polaroid-item .img-box img {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform .5s var(--e);
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
 }
 .grid-polaroid-item:hover .img-box img {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 .grid-polaroid-item .item-title {
   font-family: var(--serif);
@@ -2187,7 +2219,7 @@ input:focus, textarea:focus {
   </section>
 
   <!-- ==========================================================================
-       CREATIVE PHOTO EXPERIENCE: 3D POLAROID DECK & ALL 9 PHOTOS
+       CREATIVE PHOTO EXPERIENCE: 3D POLAROID DECK & ALL 10 PHOTOS
        ========================================================================== -->
   <section class="photo-deck-section">
     <p class="lab r">OUR JOURNEY IN MEMORIES</p>
@@ -2198,7 +2230,7 @@ input:focus, textarea:focus {
     <!-- View Mode Selector -->
     <div class="view-mode-tabs r" style="--d:.3s">
       <button class="view-tab-btn active" id="tabStack">🎴 Memory Deck</button>
-      <button class="view-tab-btn" id="tabGrid">▦ Browse All (9)</button>
+      <button class="view-tab-btn" id="tabGrid">▦ Browse All (10)</button>
     </div>
 
     <!-- 1. The Interactive 3D Polaroid Deck -->
@@ -2210,7 +2242,7 @@ input:focus, textarea:focus {
       <!-- Controls -->
       <div class="deck-controls">
         <button class="btn" id="deckPrevBtn">‹ Prev</button>
-        <span class="deck-counter-badge" id="deckCounter">Memory 1 of 9</span>
+        <span class="deck-counter-badge" id="deckCounter">Memory 1 of 10</span>
         <button class="btn btn-gold" id="deckNextBtn">Next Memory ›</button>
         <button class="btn" id="deckAutoBtn">▶ Slideshow</button>
       </div>
@@ -2218,7 +2250,7 @@ input:focus, textarea:focus {
 
     <!-- 2. The Full Album Grid (Switchable) -->
     <div class="all-photos-grid" id="allPhotosGrid">
-      <!-- Injected via JavaScript for all 9 photos -->
+      <!-- Injected via JavaScript for all 10 photos -->
     </div>
   </section>
 
@@ -2578,7 +2610,7 @@ var musicAudio = null;
 var isMusicPlaying = false;
 var ambientOsc = null;
 
-/* All 9 Photos with titles & captions */
+/* All 10 Photos with titles & captions */
 const CFG = {
   n1: "Youssef",
   n2: "Mondaine",
@@ -2592,8 +2624,9 @@ const CFG = {
     { src: "photo-6.jpeg", title: "In Your Eyes", caption: "In Your Eyes, My Whole World" },
     { src: "photo-7.jpeg", title: "Blessed by Grace", caption: "A Love Story Blessed by His Grace" },
     { src: "photo-8.jpeg", title: "Together Into Tomorrow", caption: "Walking Together Into Tomorrow" },
-    { src: "photo-9.jpeg", title: "Cherished Moments", caption: "A Journey of Faith & Endless Love" }
-  ]
+    { src: "photo-9.jpeg", title: "Our Forever", caption: "Our Forever, Written in Love" },
+    { src: "photo-10.jpeg", title: "Cherished Moments", caption: "A Journey of Faith & Endless Love" }
+    ]
 };
 
 /* --------------------------------------------------------------------------
@@ -2763,14 +2796,14 @@ function renderPetals() {
 requestAnimationFrame(renderPetals);
 
 /* --------------------------------------------------------------------------
-   CREATIVE PHOTO EXPERIENCE: 3D POLAROID DECK & ALL 9 PHOTOS
+   CREATIVE PHOTO EXPERIENCE: 3D POLAROID DECK & ALL 10 PHOTOS
    -------------------------------------------------------------------------- */
 let activeDeckIndex = 0;
 let isDeckAnimating = false;
 let autoSlideInterval = null;
 
 // Rotations and tilts for stacked cards
-const stackAngles = [1.2, -3, 2.8, -1.8, 3.2, -2.2, 1.6, -2.8, 2.1];
+const stackAngles = [1.2, -3, 2.8, -1.8, 3.2, -2.2, 1.6, -2.8, 2.1, -1.5];
 
 function renderPolaroidDeck() {
   const deck = $('#polaroidDeck');
@@ -2783,6 +2816,7 @@ function renderPolaroidDeck() {
 
     card.innerHTML = `
       <div class="polaroid-photo-box album-frame-mount">
+        <div class="photo-ambient-bg" style="background-image: url('${photo.src}')"></div>
         <span class="album-corner corner-tl"></span>
         <span class="album-corner corner-tr"></span>
         <span class="album-corner corner-bl"></span>
@@ -2912,7 +2946,7 @@ $('#deckAutoBtn').addEventListener('click', () => {
   }
 });
 
-// Render the 9-photo grid for "Browse All" mode
+// Render the 10-photo grid for "Browse All" mode
 function renderAllPhotosGrid() {
   const grid = $('#allPhotosGrid');
   grid.innerHTML = '';
@@ -2924,6 +2958,7 @@ function renderAllPhotosGrid() {
 
     item.innerHTML = `
       <div class="img-box album-frame-mount">
+        <div class="photo-ambient-bg" style="background-image: url('${photo.src}')"></div>
         <span class="album-corner corner-tl"></span>
         <span class="album-corner corner-tr"></span>
         <span class="album-corner corner-bl"></span>
