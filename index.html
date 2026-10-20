@@ -3682,19 +3682,16 @@ setInterval(tick, 1000);
 const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzaUwhWe3dFARPbmc49phakCxEZV6pDQQmAoWqRbiPVc-Fckxrvltg_ZBE9gstACyVL/exec';
 const STORAGE_KEY = 'ym_guest_wishes_v2';
 let memoryWishes = [];
-
-const FILTERED_SAMPLE_NAMES = [
-  'Uncle Fady & Family', 'Marina & Mina', 'Test User', 'Test Probe', 'Brother Test', 'Browser Sim User'
-];
+let pendingLocalWishes = [];
 
 function getStoredWishes() {
   try {
     const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     if (Array.isArray(local) && local.length > 0) {
-      return local.filter(w => w && w.name && w.message && !FILTERED_SAMPLE_NAMES.includes(w.name));
+      return local.filter(w => w && w.name && w.message);
     }
   } catch(e) {}
-  return memoryWishes.filter(w => w && w.name && w.message && !FILTERED_SAMPLE_NAMES.includes(w.name));
+  return memoryWishes.filter(w => w && w.name && w.message);
 }
 
 function saveStoredWishes(wishes) {
@@ -3775,15 +3772,28 @@ async function loadWishesFromGoogleSheet() {
         date: row.date || row.Timestamp || row.time || '',
         name: row.name || row.Name || 'A Beloved Guest',
         message: row.message || row.Message || ''
-      })).filter(w => w.name && w.message && !FILTERED_SAMPLE_NAMES.includes(w.name));
+      })).filter(w => w.name && w.message);
 
       // Cloud entries usually append to bottom, so reverse to show newest first
       parsedCloud.reverse();
 
-      // Google Sheet is the Single Source of Truth:
-      // If a row is deleted or edited in the Google Sheet, it immediately reflects here on refresh
-      saveStoredWishes(parsedCloud);
-      renderWishesWall(parsedCloud);
+      // Prune pending wishes older than 45s or already saved in cloud
+      const now = Date.now();
+      pendingLocalWishes = pendingLocalWishes.filter(p => {
+        const isFresh = (now - p._submittedAt) < 45000;
+        const inCloud = parsedCloud.some(c => 
+          c.name.trim() === p.name.trim() && c.message.trim() === p.message.trim()
+        );
+        return isFresh && !inCloud;
+      });
+
+      // Keep pending local wishes at top until Google Sheet confirms persistence
+      const cleanPending = pendingLocalWishes.map(({ _submittedAt, ...w }) => w);
+      const combined = [...cleanPending, ...parsedCloud];
+
+      // Google Sheet is the Single Source of Truth
+      saveStoredWishes(combined);
+      renderWishesWall(combined);
     }
   } catch(e) {
     console.log('Google Sheets sync note:', e);
@@ -3954,8 +3964,13 @@ $('#mf').onsubmit = async e => {
     date: new Date().toISOString()
   };
 
-  // 3. Save locally and display at top of Wishes Wall with golden highlight
-  const currentWishes = getStoredWishes();
+  // 3. Register as pending and display at top of Wishes Wall
+  const pendingWish = { ...newWish, _submittedAt: Date.now() };
+  pendingLocalWishes.unshift(pendingWish);
+
+  const currentWishes = getStoredWishes().filter(w => 
+    !(w.name === newWish.name && w.message === newWish.message)
+  );
   currentWishes.unshift(newWish);
   saveStoredWishes(currentWishes);
   renderWishesWall(currentWishes, 0);
@@ -3975,7 +3990,8 @@ $('#mf').onsubmit = async e => {
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(newWish)
       }).then(() => {
-        setTimeout(loadWishesFromGoogleSheet, 1500);
+        // Allow Google Apps Script enough time (3.5s) to append row before refreshing
+        setTimeout(loadWishesFromGoogleSheet, 3500);
       }).catch(err => console.warn('Google Sheet sync error:', err));
     } catch(err) {
       console.warn('Google Sheet fetch error:', err);
