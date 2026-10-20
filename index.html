@@ -3770,7 +3770,7 @@ async function loadWishesFromGoogleSheet() {
     const text = await res.text();
     const cloudData = JSON.parse(text);
 
-    if (Array.isArray(cloudData) && cloudData.length > 0) {
+    if (Array.isArray(cloudData)) {
       const parsedCloud = cloudData.map(row => ({
         date: row.date || row.Timestamp || row.time || '',
         name: row.name || row.Name || 'A Beloved Guest',
@@ -3780,20 +3780,10 @@ async function loadWishesFromGoogleSheet() {
       // Cloud entries usually append to bottom, so reverse to show newest first
       parsedCloud.reverse();
 
-      const local = getStoredWishes();
-      const merged = [];
-      const seen = new Set();
-
-      [...parsedCloud, ...local].forEach(w => {
-        const key = (w.name + '___' + w.message).trim().toLowerCase();
-        if (!seen.has(key)) {
-          seen.add(key);
-          merged.push(w);
-        }
-      });
-
-      saveStoredWishes(merged);
-      renderWishesWall(merged);
+      // Google Sheet is the Single Source of Truth:
+      // If a row is deleted or edited in the Google Sheet, it immediately reflects here on refresh
+      saveStoredWishes(parsedCloud);
+      renderWishesWall(parsedCloud);
     }
   } catch(e) {
     console.log('Google Sheets sync note:', e);
